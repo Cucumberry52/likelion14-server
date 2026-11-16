@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+spec:
+  replicas: 1
+  # emptyDir DB 두 개가 같은 Service에 동시에 연결되지 않게 한다.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:18.4
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              value: petclinic
+            - name: POSTGRES_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: petclinic-config
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: petclinic-db-secret
+                  key: POSTGRES_PASS
+          readinessProbe:
+            exec:
+              command: [pg_isready, -h, "127.0.0.1", -U, petclinic, -d, petclinic]
+          volumeMounts:
+            - name: initialization
+              mountPath: /docker-entrypoint-initdb.d
+              readOnly: true
+            - name: data
+              mountPath: /var/lib/postgresql
+      volumes:
+        - name: initialization
+          configMap:
+            name: petclinic-db-init
+        - name: data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+spec:
+  type: ClusterIP
+  selector:
+    app: postgres
+  ports:
+    - port: 5432
+      targetPort: 5432

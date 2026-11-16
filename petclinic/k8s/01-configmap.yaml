@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: petclinic-config
+data:
+  SPRING_PROFILES_ACTIVE: postgres
+  SPRING_SQL_INIT_MODE: never
+  POSTGRES_URL: jdbc:postgresql://postgres:5432/petclinic
+  POSTGRES_USER: petclinic
+  MANAGEMENT_ENDPOINT_HEALTH_PROBES_ENABLED: "true"
